@@ -1,7 +1,7 @@
 package eznetworking.server.events;
 
 import eznetworking.packet.Packet;
-import eznetworking.server.Connection;
+import eznetworking.server.connection.Connection;
 import eznetworking.server.Server;
 
 public interface PacketReceived {
