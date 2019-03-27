@@ -7,10 +7,14 @@ import eznetworking.client.Client;
 public class Connection extends Client {
 
     private Server parentServer;
+    private int group;
+    private PowerLevel powerLevel;
 
     public Connection(Socket socket, Server parentServer) {
         super(socket);
         this.parentServer = parentServer;
+        this.group = 1;
+        this.powerLevel = PowerLevel.LOW;
     }
 
     @Override
@@ -20,5 +24,28 @@ public class Connection extends Client {
 
     public Server getParentServer() {
         return parentServer;
+    }
+
+    public int getGroup() {
+        return group;
+    }
+
+    public void setGroup(int group) {
+        this.group = group;
+    }
+
+    public PowerLevel getPowerLevel() {
+        return powerLevel;
+    }
+
+    public void setPowerLevel(PowerLevel powerLevel) {
+        if (powerLevel == PowerLevel.ADMINISTRATOR) {
+            for (Connection c : parentServer) {
+                if (c.getPowerLevel() == PowerLevel.ADMINISTRATOR) {
+                    throw new SecurityException();
+                }
+            }
+        }
+        this.powerLevel = powerLevel;
     }
 }
