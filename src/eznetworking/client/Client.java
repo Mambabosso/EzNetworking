@@ -350,7 +350,6 @@ public class Client {
                 pr.received(this, packet);
             }
         });
-
     }
 
     public void addPacketReceivedListener(PacketReceived listener) {
