@@ -12,6 +12,7 @@ import java.util.function.Function;
 import eznetworking.packet.Packet;
 import eznetworking.server.events.*;
 import eznetworking.util.Progress;
+import eznetworking.util.Runner;
 import eznetworking.util.UniqueId;
 
 public class Server implements Iterable<Connection> {
@@ -171,9 +172,12 @@ public class Server implements Iterable<Connection> {
     // --- Events ---
 
     private void triggerErrorOccurred(Exception error) {
-        for (ErrorOccurred eo : errorOccurredEvents) {
-            eo.occurred(this, error);
-        }
+        Runner.run(() -> {
+            for (ErrorOccurred eo : errorOccurredEvents) {
+                eo.occurred(this, error);
+            }
+        });
+
     }
 
     public void addErrorOccurredListener(ErrorOccurred listener) {
@@ -191,9 +195,11 @@ public class Server implements Iterable<Connection> {
     }
 
     private void triggerServerStarted() {
-        for (ServerStarted ss : serverStartedEvents) {
-            ss.started(this);
-        }
+        Runner.run(() -> {
+            for (ServerStarted ss : serverStartedEvents) {
+                ss.started(this);
+            }
+        });
     }
 
     public void addServerStartedListener(ServerStarted listener) {
@@ -211,9 +217,11 @@ public class Server implements Iterable<Connection> {
     }
 
     private void triggerServerStopped() {
-        for (ServerStopped ss : serverStoppedEvents) {
-            ss.stopped(this);
-        }
+        Runner.run(() -> {
+            for (ServerStopped ss : serverStoppedEvents) {
+                ss.stopped(this);
+            }
+        });
     }
 
     public void addServerStoppedListener(ServerStopped listener) {
@@ -232,9 +240,11 @@ public class Server implements Iterable<Connection> {
 
     private void triggerClientConnected(Connection client) {
         if (clients.put(client.getId(), client) == null) {
-            for (ClientConnected cc : clientConnectedEvents) {
-                cc.connected(this, client);
-            }
+            Runner.run(() -> {
+                for (ClientConnected cc : clientConnectedEvents) {
+                    cc.connected(this, client);
+                }
+            });
         }
     }
 
@@ -254,9 +264,11 @@ public class Server implements Iterable<Connection> {
 
     private void triggerClientDisconnected(Connection client) {
         if (clients.remove(client.getId(), client)) {
-            for (ClientDisconnected cd : clientDisconnectedEvents) {
-                cd.disconnected(this, client);
-            }
+            Runner.run(() -> {
+                for (ClientDisconnected cd : clientDisconnectedEvents) {
+                    cd.disconnected(this, client);
+                }
+            });
         }
     }
 
@@ -275,9 +287,11 @@ public class Server implements Iterable<Connection> {
     }
 
     private void triggerNewDataAvailable(Connection client, int type, int length, Progress<Integer> progress) {
-        for (NewDataAvailable nda : newDataAvailableEvents) {
-            nda.available(this, client, type, length, progress);
-        }
+        Runner.run(() -> {
+            for (NewDataAvailable nda : newDataAvailableEvents) {
+                nda.available(this, client, type, length, progress);
+            }
+        });
     }
 
     public void addNewDataAvailableListener(NewDataAvailable listener) {
@@ -295,9 +309,11 @@ public class Server implements Iterable<Connection> {
     }
 
     private void triggerBytesReceived(Connection client, byte[] data) {
-        for (BytesReceived br : bytesReceivedEvents) {
-            br.received(this, client, data);
-        }
+        Runner.run(() -> {
+            for (BytesReceived br : bytesReceivedEvents) {
+                br.received(this, client, data);
+            }
+        });
     }
 
     public void addBytesReceivedListener(BytesReceived listener) {
@@ -315,9 +331,11 @@ public class Server implements Iterable<Connection> {
     }
 
     private void triggerPacketReceived(Connection client, Packet packet) {
-        for (PacketReceived pr : packetReceivedEvents) {
-            pr.received(this, client, packet);
-        }
+        Runner.run(() -> {
+            for (PacketReceived pr : packetReceivedEvents) {
+                pr.received(this, client, packet);
+            }
+        });
     }
 
     public void addPacketReceivedListener(PacketReceived listener) {
@@ -348,9 +366,11 @@ public class Server implements Iterable<Connection> {
     }
 
     private void triggerCustomReceived(Connection client, int type, byte[] data) {
-        for (CustomReceived cr : customReceivedEvents) {
-            cr.received(this, client, type, data);
-        }
+        Runner.run(() -> {
+            for (CustomReceived cr : customReceivedEvents) {
+                cr.received(this, client, type, data);
+            }
+        });
     }
 
     public void addCustomReceivedListener(CustomReceived listener) {
@@ -381,9 +401,11 @@ public class Server implements Iterable<Connection> {
     }
 
     private void triggerDataSendPrepared(Connection client, int type, int length, Progress<Integer> progress) {
-        for (DataSendPrepared dsp : dataSendPrepared) {
-            dsp.prepared(this, client, type, length, progress);
-        }
+        Runner.run(() -> {
+            for (DataSendPrepared dsp : dataSendPrepared) {
+                dsp.prepared(this, client, type, length, progress);
+            }
+        });
     }
 
     public void addDataSendPreparedListener(DataSendPrepared listener) {
