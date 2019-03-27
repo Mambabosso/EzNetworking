@@ -80,6 +80,10 @@ public class Client {
         }
     }
 
+    public synchronized boolean connect() {
+        return connect(false);
+    }
+
     public boolean startReceiving() {
         try {
             if (receiveThread == null || !receiveThread.isAlive()) {
