@@ -10,6 +10,7 @@ import java.util.Iterator;
 import java.util.function.Function;
 
 import eznetworking.packet.Packet;
+import eznetworking.server.connection.Connection;
 import eznetworking.server.events.*;
 import eznetworking.util.Progress;
 import eznetworking.util.Runner;
@@ -177,7 +178,6 @@ public class Server implements Iterable<Connection> {
                 eo.occurred(this, error);
             }
         });
-
     }
 
     public void addErrorOccurredListener(ErrorOccurred listener) {
