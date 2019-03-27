@@ -10,6 +10,7 @@ import java.util.Arrays;
 import eznetworking.client.events.*;
 import eznetworking.packet.Packet;
 import eznetworking.util.Progress;
+import eznetworking.util.Runner;
 import eznetworking.util.Serializer;
 import eznetworking.util.UniqueId;
 
@@ -234,9 +235,11 @@ public class Client {
     }
 
     private void triggerErrorOccurred(Exception error) {
-        for (ErrorOccurred eo : errorOccurredEvents) {
-            eo.occurred(this, error);
-        }
+        Runner.run(() -> {
+            for (ErrorOccurred eo : errorOccurredEvents) {
+                eo.occurred(this, error);
+            }
+        });
     }
 
     public void addErrorOccurredListener(ErrorOccurred listener) {
@@ -254,9 +257,11 @@ public class Client {
     }
 
     private void triggerClientConnected() {
-        for (ClientConnected cc : clientConnectedEvents) {
-            cc.connected(this);
-        }
+        Runner.run(() -> {
+            for (ClientConnected cc : clientConnectedEvents) {
+                cc.connected(this);
+            }
+        });
     }
 
     public void addClientConnectedListener(ClientConnected listener) {
@@ -274,9 +279,11 @@ public class Client {
     }
 
     private void triggerClientDisconnected() {
-        for (ClientDisconnected cd : clientDisconnectedEvents) {
-            cd.disconnected(this);
-        }
+        Runner.run(() -> {
+            for (ClientDisconnected cd : clientDisconnectedEvents) {
+                cd.disconnected(this);
+            }
+        });
     }
 
     public void addClientDisconnectedListener(ClientDisconnected listener) {
@@ -294,9 +301,11 @@ public class Client {
     }
 
     private void triggerNewDataAvailable(int type, int length, Progress<Integer> progress) {
-        for (NewDataAvailable nda : newDataAvailableEvents) {
-            nda.available(this, type, length, progress);
-        }
+        Runner.run(() -> {
+            for (NewDataAvailable nda : newDataAvailableEvents) {
+                nda.available(this, type, length, progress);
+            }
+        });
     }
 
     public void addNewDataAvailableListener(NewDataAvailable listener) {
@@ -314,9 +323,11 @@ public class Client {
     }
 
     private void triggerBytesReceived(byte[] data) {
-        for (BytesReceived br : bytesReceivedEvents) {
-            br.received(this, data);
-        }
+        Runner.run(() -> {
+            for (BytesReceived br : bytesReceivedEvents) {
+                br.received(this, data);
+            }
+        });
     }
 
     public void addBytesReceivedListener(BytesReceived listener) {
@@ -334,9 +345,12 @@ public class Client {
     }
 
     private void triggerPacketReceived(Packet packet) {
-        for (PacketReceived pr : packetReceivedEvents) {
-            pr.received(this, packet);
-        }
+        Runner.run(() -> {
+            for (PacketReceived pr : packetReceivedEvents) {
+                pr.received(this, packet);
+            }
+        });
+
     }
 
     public void addPacketReceivedListener(PacketReceived listener) {
@@ -367,9 +381,11 @@ public class Client {
     }
 
     private void triggerCustomReceived(int type, byte[] data) {
-        for (CustomReceived cr : customReceivedEvents) {
-            cr.received(this, type, data);
-        }
+        Runner.run(() -> {
+            for (CustomReceived cr : customReceivedEvents) {
+                cr.received(this, type, data);
+            }
+        });
     }
 
     public void addCustomReceivedListener(CustomReceived listener) {
@@ -400,9 +416,11 @@ public class Client {
     }
 
     private void triggerDataSendPrepared(int type, int length, Progress<Integer> progress) {
-        for (DataSendPrepared dsp : dataSendPrepared) {
-            dsp.prepared(this, type, length, progress);
-        }
+        Runner.run(() -> {
+            for (DataSendPrepared dsp : dataSendPrepared) {
+                dsp.prepared(this, type, length, progress);
+            }
+        });
     }
 
     public void addDataSendPreparedListener(DataSendPrepared listener) {
