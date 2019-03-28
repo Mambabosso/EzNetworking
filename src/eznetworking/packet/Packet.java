@@ -75,7 +75,7 @@ public final class Packet implements Serializable {
     }
 
     public static <T extends Serializable> Packet create(String header, String source, String destination, T tClass) {
-        if (header != null && !header.isBlank() && tClass != null) {
+        if (header != null && !header.trim().isEmpty() && tClass != null) {
             byte[] bytes = Serializer.serialize(tClass);
             if (bytes != null) {
                 return new Packet(header, source, destination, tClass.getClass(), bytes);
@@ -87,4 +87,5 @@ public final class Packet implements Serializable {
     public static <T extends Serializable> Packet create(String header, T tClass) {
         return Packet.create(header, null, null, tClass);
     }
+
 }
