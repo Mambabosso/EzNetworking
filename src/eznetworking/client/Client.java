@@ -153,14 +153,15 @@ public class Client {
             synchronized (receiveLock) {
                 ByteBuffer byteBuffer = ByteBuffer.allocate(length);
                 byte[] buffer = (length > receiveBufferSize) ? new byte[receiveBufferSize] : new byte[length];
+                progress.started(0);
                 int bytesRead = 0;
                 for (int i = 0; i < length; i += bytesRead) {
                     bytesRead = client.getInputStream().read(buffer, 0, buffer.length);
                     byteBuffer.put(buffer, 0, bytesRead);
                     bytesReceived += bytesRead;
-                    progress.report(i);
+                    progress.changed(i);
                 }
-                progress.report(length);
+                progress.finished(length);
                 return byteBuffer.array();
             }
         } catch (SocketTimeoutException ex) {
@@ -177,13 +178,14 @@ public class Client {
                 ByteBuffer byteBuffer = ByteBuffer.allocate(8 + data.length).putInt(type).putInt(data.length).put(data);
                 byte[] bytes = byteBuffer.array();
                 triggerDataSendPrepared(type, bytes.length, progress);
-                for (int offset = 0; offset < bytes.length; offset += sendBufferSize) {
-                    int count = Math.min(sendBufferSize, bytes.length - offset);
-                    client.getOutputStream().write(bytes, offset, count);
+                progress.started(0);
+                for (int i = 0; i < bytes.length; i += sendBufferSize) {
+                    int count = Math.min(sendBufferSize, bytes.length - i);
+                    client.getOutputStream().write(bytes, i, count);
                     bytesSent += count;
-                    progress.report(offset);
+                    progress.changed(i);
                 }
-                progress.report(bytes.length);
+                progress.finished(bytes.length);
                 return true;
             }
         } catch (Exception ex) {
@@ -225,15 +227,15 @@ public class Client {
     private void triggerReceivedEvent(int type, byte[] data) {
         if (type > 0 && data != null && data.length > 0) {
             switch (type) {
-            case 1:
-                triggerBytesReceived(data);
-                break;
-            case 2:
-                triggerPacketReceived(Serializer.deserialize(data));
-                break;
-            default:
-                triggerCustomReceived(type, data);
-                break;
+                case 1 :
+                    triggerBytesReceived(data);
+                    break;
+                case 2 :
+                    triggerPacketReceived(Serializer.deserialize(data));
+                    break;
+                default :
+                    triggerCustomReceived(type, data);
+                    break;
             }
         }
     }
