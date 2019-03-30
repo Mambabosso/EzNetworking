@@ -6,6 +6,7 @@ import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.function.Consumer;
 
 import eznetworking.client.events.*;
 import eznetworking.packet.Packet;
@@ -69,7 +70,7 @@ public class Client {
             if (client == null) {
                 client = new Socket(host, port);
                 client.setKeepAlive(true);
-                client.setSoTimeout(500);
+                // client.setSoTimeout(500);
                 triggerClientConnected();
                 return startReceiving ? startReceiving() : true;
             }
@@ -153,15 +154,14 @@ public class Client {
             synchronized (receiveLock) {
                 ByteBuffer byteBuffer = ByteBuffer.allocate(length);
                 byte[] buffer = (length > receiveBufferSize) ? new byte[receiveBufferSize] : new byte[length];
-                progress.started(0);
                 int bytesRead = 0;
                 for (int i = 0; i < length; i += bytesRead) {
                     bytesRead = client.getInputStream().read(buffer, 0, buffer.length);
                     byteBuffer.put(buffer, 0, bytesRead);
                     bytesReceived += bytesRead;
-                    progress.changed(i);
+                    progress.report(i);
                 }
-                progress.finished(length);
+                progress.report(length);
                 return byteBuffer.array();
             }
         } catch (SocketTimeoutException ex) {
@@ -178,14 +178,13 @@ public class Client {
                 ByteBuffer byteBuffer = ByteBuffer.allocate(8 + data.length).putInt(type).putInt(data.length).put(data);
                 byte[] bytes = byteBuffer.array();
                 triggerDataSendPrepared(type, bytes.length, progress);
-                progress.started(0);
-                for (int i = 0; i < bytes.length; i += sendBufferSize) {
-                    int count = Math.min(sendBufferSize, bytes.length - i);
-                    client.getOutputStream().write(bytes, i, count);
+                for (int offset = 0; offset < bytes.length; offset += sendBufferSize) {
+                    int count = Math.min(sendBufferSize, bytes.length - offset);
+                    client.getOutputStream().write(bytes, offset, count);
                     bytesSent += count;
-                    progress.changed(i);
+                    progress.report(offset);
                 }
-                progress.finished(bytes.length);
+                progress.report(bytes.length);
                 return true;
             }
         } catch (Exception ex) {
@@ -227,15 +226,15 @@ public class Client {
     private void triggerReceivedEvent(int type, byte[] data) {
         if (type > 0 && data != null && data.length > 0) {
             switch (type) {
-                case 1 :
-                    triggerBytesReceived(data);
-                    break;
-                case 2 :
-                    triggerPacketReceived(Serializer.deserialize(data));
-                    break;
-                default :
-                    triggerCustomReceived(type, data);
-                    break;
+            case 1:
+                triggerBytesReceived(data);
+                break;
+            case 2:
+                triggerPacketReceived(Serializer.deserialize(data));
+                break;
+            default:
+                triggerCustomReceived(type, data);
+                break;
             }
         }
     }
@@ -372,6 +371,19 @@ public class Client {
         PacketReceived result = (s, p) -> {
             if (p.getHeader().contentEquals(header) || header.contentEquals("*")) {
                 listener.received(s, p);
+            }
+        };
+        addPacketReceivedListener(result);
+        return result;
+    }
+
+    public <T> PacketReceived addPacketReceivedListener(String header, Class<T> tClass, Consumer<T> listener) {
+        if (header == null || header.trim().isEmpty() || tClass == null || listener == null) {
+            throw new IllegalArgumentException();
+        }
+        PacketReceived result = (s, p) -> {
+            if ((p.getHeader().contentEquals(header) || header.contentEquals("*")) && p.getPayloadClass().equals(tClass)) {
+                listener.accept(p.unpack(tClass));
             }
         };
         addPacketReceivedListener(result);
