@@ -40,7 +40,7 @@ public class Server implements Iterable<Connection> {
     private boolean isListening;
 
     private ArrayList<String> blacklistedIPAddresses = new ArrayList<>();
-    private Function<Connection, Boolean> clientFilter = (c) -> true;
+    private Function<Connection, Boolean> clientCondition = (c) -> true;
 
     private Server() {
         this.id = UniqueId.generate();
@@ -69,7 +69,7 @@ public class Server implements Iterable<Connection> {
                                     InetAddress address = socket.getInetAddress();
                                     if (!blacklistedIPAddresses.contains(address.getHostAddress())) {
                                         Connection client = new Connection(socket, this);
-                                        if (clientFilter.apply(client) && initClient(client)) {
+                                        if (client.startReceiving() && clientCondition.apply(client) && initClient(client)) {
                                             triggerClientConnected(client);
                                         } else {
                                             client.disconnect();
@@ -143,28 +143,13 @@ public class Server implements Iterable<Connection> {
         try {
             client.getSocket().setKeepAlive(true);
             client.getSocket().setSoTimeout(500);
-            client.addClientConnectedListener((s) -> {
-                throw new UnsupportedOperationException();
-            });
-            client.addClientDisconnectedListener((s) -> {
-                triggerClientDisconnected(client);
-            });
-            client.addNewDataAvailableListener((s, t, l, p) -> {
-                triggerNewDataAvailable(client, t, l, p);
-            });
-            client.addBytesReceivedListener((s, d) -> {
-                triggerBytesReceived(client, d);
-            });
-            client.addPacketReceivedListener((s, p) -> {
-                triggerPacketReceived(client, p);
-            });
-            client.addCustomReceivedListener((s, t, d) -> {
-                triggerCustomReceived(client, t, d);
-            });
-            client.addDataSendPreparedListener((s, t, l, p) -> {
-                triggerDataSendPrepared(client, t, l, p);
-            });
-            return client.startReceiving();
+            client.addClientDisconnectedListener((s) -> triggerClientDisconnected(client));
+            client.addNewDataAvailableListener((s, t, l, p) -> triggerNewDataAvailable(client, t, l, p));
+            client.addBytesReceivedListener((s, d) -> triggerBytesReceived(client, d));
+            client.addPacketReceivedListener((s, p) -> triggerPacketReceived(client, p));
+            client.addCustomReceivedListener((s, t, d) -> triggerCustomReceived(client, t, d));
+            client.addDataSendPreparedListener((s, t, l, p) -> triggerDataSendPrepared(client, t, l, p));
+            return true;
         } catch (Exception ex) {
             return false;
         }
@@ -451,13 +436,13 @@ public class Server implements Iterable<Connection> {
         return blacklistedIPAddresses;
     }
 
-    public Function<Connection, Boolean> getClientFilter() {
-        return clientFilter;
+    public Function<Connection, Boolean> getClientCondition() {
+        return clientCondition;
     }
 
-    public void setClientFilter(Function<Connection, Boolean> filter) {
-        if (filter != null) {
-            clientFilter = filter;
+    public void setClientCondition(Function<Connection, Boolean> condition) {
+        if (condition != null) {
+            clientCondition = condition;
         }
     }
 
