@@ -7,10 +7,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import eznetworking.packet.Packet;
 import eznetworking.server.connection.Connection;
+import eznetworking.server.connection.PowerLevel;
 import eznetworking.server.events.*;
 import eznetworking.util.Progress;
 import eznetworking.util.Runner;
@@ -115,21 +117,21 @@ public class Server implements Iterable<Connection> {
         }
     }
 
-    public boolean blacklistClient(Connection c, boolean disconnect) {
-        if (c == null) {
+    public boolean blacklistClient(Connection client, boolean disconnect) {
+        if (client == null) {
             throw new IllegalArgumentException();
         }
-        String ip = c.getSocket().getInetAddress().getHostAddress();
-        return disconnect ? blacklistedIPAddresses.add(ip) && c.disconnect() : blacklistedIPAddresses.add(ip);
+        String ip = client.getSocket().getInetAddress().getHostAddress();
+        return disconnect ? blacklistedIPAddresses.add(ip) && client.disconnect() : blacklistedIPAddresses.add(ip);
     }
 
-    public boolean[] disconnectClients(Connection[] c) {
-        if (c == null) {
+    public boolean[] disconnectClients(Connection[] clients) {
+        if (clients == null) {
             throw new IllegalArgumentException();
         }
-        boolean[] result = new boolean[c.length];
-        for (int i = 0; i < c.length; i++) {
-            result[i] = c[i].disconnect();
+        boolean[] result = new boolean[clients.length];
+        for (int i = 0; i < clients.length; i++) {
+            result[i] = clients[i].disconnect();
         }
         return result;
     }
@@ -343,6 +345,19 @@ public class Server implements Iterable<Connection> {
         return result;
     }
 
+    public <T> PacketReceived addPacketReceivedListener(String header, Class<T> tClass, BiConsumer<Connection, T> listener) {
+        if (header == null || header.trim().isEmpty() || tClass == null || listener == null) {
+            throw new IllegalArgumentException();
+        }
+        PacketReceived result = (s, c, p) -> {
+            if ((p.getHeader().contentEquals(header) || header.contentEquals("*")) && p.getPayloadClass().equals(tClass)) {
+                listener.accept(c, p.unpack(tClass));
+            }
+        };
+        addPacketReceivedListener(result);
+        return result;
+    }
+
     public boolean removePacketReceivedListener(PacketReceived listener) {
         if (listener == null) {
             throw new IllegalArgumentException();
@@ -430,6 +445,29 @@ public class Server implements Iterable<Connection> {
 
     public Connection[] getClients() {
         return clients.values().toArray(new Connection[clients.size()]);
+    }
+
+    public Connection[] getClients(int group) {
+        ArrayList<Connection> result = new ArrayList<>();
+        for (Connection c : this) {
+            if (c.getGroup() == group) {
+                result.add(c);
+            }
+        }
+        return result.toArray(new Connection[result.size()]);
+    }
+
+    public Connection[] getClients(PowerLevel powerLevel) {
+        if (powerLevel == null) {
+            throw new IllegalArgumentException();
+        }
+        ArrayList<Connection> result = new ArrayList<>();
+        for (Connection c : this) {
+            if (c.getPowerLevel() == powerLevel) {
+                result.add(c);
+            }
+        }
+        return result.toArray(new Connection[result.size()]);
     }
 
     public ArrayList<String> getBlacklistedIPAddresses() {
