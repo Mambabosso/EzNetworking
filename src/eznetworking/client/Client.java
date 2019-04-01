@@ -1,8 +1,11 @@
 package eznetworking.client;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -155,9 +158,10 @@ public class Client {
                 ByteBuffer byteBuffer = ByteBuffer.allocate(length);
                 byte[] buffer = (length > receiveBufferSize) ? new byte[receiveBufferSize] : new byte[length];
                 progress.started(0);
+                InputStream inputStream = client.getInputStream();
                 int bytesRead = 0;
                 for (int i = 0; i < length; i += bytesRead) {
-                    bytesRead = client.getInputStream().read(buffer, 0, buffer.length);
+                    bytesRead = inputStream.read(buffer, 0, buffer.length);
                     byteBuffer.put(buffer, 0, bytesRead);
                     bytesReceived += bytesRead;
                     progress.changed(i);
@@ -165,7 +169,7 @@ public class Client {
                 progress.finished(length);
                 return byteBuffer.array();
             }
-        } catch (SocketTimeoutException ex) {
+        } catch (BufferOverflowException | SocketTimeoutException ex) {
             return new byte[0];
         } catch (Exception ex) {
             disconnect();
@@ -180,15 +184,18 @@ public class Client {
                 byte[] bytes = byteBuffer.array();
                 triggerDataSendPrepared(type, bytes.length, progress);
                 progress.started(0);
+                OutputStream outputStream = client.getOutputStream();
                 for (int i = 0; i < bytes.length; i += sendBufferSize) {
                     int count = Math.min(sendBufferSize, bytes.length - i);
-                    client.getOutputStream().write(bytes, i, count);
+                    outputStream.write(bytes, i, count);
                     bytesSent += count;
                     progress.changed(i);
                 }
                 progress.finished(bytes.length);
                 return true;
             }
+        } catch (BufferOverflowException ex) {
+            return false;
         } catch (Exception ex) {
             disconnect();
             return false;
@@ -228,15 +235,15 @@ public class Client {
     private void triggerReceivedEvent(int type, byte[] data) {
         if (type > 0 && data != null && data.length > 0) {
             switch (type) {
-            case 1:
-                triggerBytesReceived(data);
-                break;
-            case 2:
-                triggerPacketReceived(Serializer.deserialize(data));
-                break;
-            default:
-                triggerCustomReceived(type, data);
-                break;
+                case 1 :
+                    triggerBytesReceived(data);
+                    break;
+                case 2 :
+                    triggerPacketReceived(Serializer.deserialize(data));
+                    break;
+                default :
+                    triggerCustomReceived(type, data);
+                    break;
             }
         }
     }
