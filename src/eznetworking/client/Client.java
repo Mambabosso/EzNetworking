@@ -29,7 +29,7 @@ public class Client {
     private ArrayList<ErrorOccurred> errorOccurredEvents = new ArrayList<>();
     private ArrayList<ClientConnected> clientConnectedEvents = new ArrayList<>();
     private ArrayList<ClientDisconnected> clientDisconnectedEvents = new ArrayList<>();
-    private ArrayList<NewDataAvailable> newDataAvailableEvents = new ArrayList<>();
+    private ArrayList<DataAvailable> dataAvailableEvents = new ArrayList<>();
     private ArrayList<BytesReceived> bytesReceivedEvents = new ArrayList<>();
     private ArrayList<PacketReceived> packetReceivedEvents = new ArrayList<>();
     private ArrayList<CustomReceived> customReceivedEvents = new ArrayList<>();
@@ -100,7 +100,7 @@ public class Client {
                                 int type = ByteBuffer.wrap(Arrays.copyOfRange(bytes, 0, 4)).getInt();
                                 int length = ByteBuffer.wrap(Arrays.copyOfRange(bytes, 4, 8)).getInt();
                                 Progress<Integer> progress = new Progress<>();
-                                triggerNewDataAvailable(type, length, progress);
+                                triggerDataAvailable(type, length, progress);
                                 triggerReceivedEvent(type, receive(length, progress));
                             } else if (bytes != null && bytes.length == 0) {
                             } else {
@@ -234,16 +234,12 @@ public class Client {
 
     private void triggerReceivedEvent(int type, byte[] data) {
         if (type > 0 && data != null && data.length > 0) {
-            switch (type) {
-                case 1 :
-                    triggerBytesReceived(data);
-                    break;
-                case 2 :
-                    triggerPacketReceived(Serializer.deserialize(data));
-                    break;
-                default :
-                    triggerCustomReceived(type, data);
-                    break;
+            if (type == 1) {
+                triggerBytesReceived(data);
+            } else if (type == 2) {
+                triggerPacketReceived(Serializer.deserialize(data));
+            } else {
+                triggerCustomReceived(type, data);
             }
         }
     }
@@ -314,26 +310,26 @@ public class Client {
         return clientDisconnectedEvents.remove(listener);
     }
 
-    private void triggerNewDataAvailable(int type, int length, Progress<Integer> progress) {
+    private void triggerDataAvailable(int type, int length, Progress<Integer> progress) {
         Runner.run(() -> {
-            for (NewDataAvailable nda : newDataAvailableEvents) {
+            for (DataAvailable nda : dataAvailableEvents) {
                 nda.available(this, type, length, progress);
             }
         });
     }
 
-    public void addNewDataAvailableListener(NewDataAvailable listener) {
+    public void addDataAvailableListener(DataAvailable listener) {
         if (listener == null) {
             throw new IllegalArgumentException();
         }
-        newDataAvailableEvents.add(listener);
+        dataAvailableEvents.add(listener);
     }
 
-    public boolean removeNewDataAvailableListener(NewDataAvailable listener) {
+    public boolean removeDataAvailableListener(DataAvailable listener) {
         if (listener == null) {
             throw new IllegalArgumentException();
         }
-        return newDataAvailableEvents.remove(listener);
+        return dataAvailableEvents.remove(listener);
     }
 
     private void triggerBytesReceived(byte[] data) {
