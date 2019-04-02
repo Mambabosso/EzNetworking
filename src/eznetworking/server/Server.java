@@ -30,7 +30,7 @@ public class Server implements Iterable<Connection> {
     private ArrayList<ServerStopped> serverStoppedEvents = new ArrayList<>();
     private ArrayList<ClientConnected> clientConnectedEvents = new ArrayList<>();
     private ArrayList<ClientDisconnected> clientDisconnectedEvents = new ArrayList<>();
-    private ArrayList<NewDataAvailable> newDataAvailableEvents = new ArrayList<>();
+    private ArrayList<DataAvailable> dataAvailableEvents = new ArrayList<>();
     private ArrayList<BytesReceived> bytesReceivedEvents = new ArrayList<>();
     private ArrayList<PacketReceived> packetReceivedEvents = new ArrayList<>();
     private ArrayList<CustomReceived> customReceivedEvents = new ArrayList<>();
@@ -146,7 +146,7 @@ public class Server implements Iterable<Connection> {
             client.getSocket().setKeepAlive(true);
             client.getSocket().setSoTimeout(500);
             client.addClientDisconnectedListener((s) -> triggerClientDisconnected(client));
-            client.addNewDataAvailableListener((s, t, l, p) -> triggerNewDataAvailable(client, t, l, p));
+            client.addDataAvailableListener((s, t, l, p) -> triggerDataAvailable(client, t, l, p));
             client.addBytesReceivedListener((s, d) -> triggerBytesReceived(client, d));
             client.addPacketReceivedListener((s, p) -> triggerPacketReceived(client, p));
             client.addCustomReceivedListener((s, t, d) -> triggerCustomReceived(client, t, d));
@@ -273,26 +273,26 @@ public class Server implements Iterable<Connection> {
         return clientDisconnectedEvents.remove(listener);
     }
 
-    private void triggerNewDataAvailable(Connection client, int type, int length, Progress<Integer> progress) {
+    private void triggerDataAvailable(Connection client, int type, int length, Progress<Integer> progress) {
         Runner.run(() -> {
-            for (NewDataAvailable nda : newDataAvailableEvents) {
+            for (DataAvailable nda : dataAvailableEvents) {
                 nda.available(this, client, type, length, progress);
             }
         });
     }
 
-    public void addNewDataAvailableListener(NewDataAvailable listener) {
+    public void addDataAvailableListener(DataAvailable listener) {
         if (listener == null) {
             throw new IllegalArgumentException();
         }
-        newDataAvailableEvents.add(listener);
+        dataAvailableEvents.add(listener);
     }
 
-    public boolean removeNewDataAvailableListener(NewDataAvailable listener) {
+    public boolean removeDataAvailableListener(DataAvailable listener) {
         if (listener == null) {
             throw new IllegalArgumentException();
         }
-        return newDataAvailableEvents.remove(listener);
+        return dataAvailableEvents.remove(listener);
     }
 
     private void triggerBytesReceived(Connection client, byte[] data) {
