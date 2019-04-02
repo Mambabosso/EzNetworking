@@ -23,6 +23,11 @@ public class Connection extends Client {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public synchronized boolean connect() {
+        throw new UnsupportedOperationException();
+    }
+
     public Server getParentServer() {
         return parentServer;
     }
@@ -39,7 +44,7 @@ public class Connection extends Client {
         return powerLevel;
     }
 
-    public void setPowerLevel(PowerLevel powerLevel) {
+    public void setPowerLevel(PowerLevel powerLevel) throws SecurityException {
         if (powerLevel == PowerLevel.ADMINISTRATOR) {
             for (Connection c : parentServer) {
                 if (c.getPowerLevel() == PowerLevel.ADMINISTRATOR) {
