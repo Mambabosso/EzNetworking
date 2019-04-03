@@ -9,14 +9,17 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import eznetworking.client.events.*;
 import eznetworking.packet.Packet;
+import eznetworking.util.AutoResetEvent;
 import eznetworking.util.Progress;
 import eznetworking.util.Runner;
 import eznetworking.util.Serializer;
 import eznetworking.util.UniqueId;
+import eznetworking.util.Wrapper;
 
 public class Client {
 
@@ -216,6 +219,23 @@ public class Client {
         return send(2, Serializer.serialize(packet), new Progress<Integer>());
     }
 
+    public Packet sendPacket(Packet packet, long timeout) throws InterruptedException, TimeoutException {
+        if (packet == null || timeout < 0) {
+            throw new IllegalArgumentException();
+        }
+        Wrapper<Packet> wrapper = new Wrapper<>(null);
+        AutoResetEvent autoResetEvent = new AutoResetEvent(false);
+        PacketReceived listener = addPacketReceivedListener(packet.getReplyHeader(), (s, p) -> {
+            wrapper.setValue(p);
+            autoResetEvent.set();
+        });
+        if (sendPacket(packet)) {
+            autoResetEvent.waitOne(timeout);
+        }
+        removePacketReceivedListener(listener);
+        return wrapper.getValue();
+    }
+
     public boolean sendCustom(int type, byte[] data) {
         if (type < 3 || data == null || data.length == 0) {
             throw new IllegalArgumentException();
@@ -312,8 +332,8 @@ public class Client {
 
     private void triggerDataAvailable(int type, int length, Progress<Integer> progress) {
         Runner.run(() -> {
-            for (DataAvailable nda : dataAvailableEvents) {
-                nda.available(this, type, length, progress);
+            for (DataAvailable da : dataAvailableEvents) {
+                da.available(this, type, length, progress);
             }
         });
     }
