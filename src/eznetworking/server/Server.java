@@ -275,8 +275,8 @@ public class Server implements Iterable<Connection> {
 
     private void triggerDataAvailable(Connection client, int type, int length, Progress<Integer> progress) {
         Runner.run(() -> {
-            for (DataAvailable nda : dataAvailableEvents) {
-                nda.available(this, client, type, length, progress);
+            for (DataAvailable da : dataAvailableEvents) {
+                da.available(this, client, type, length, progress);
             }
         });
     }
