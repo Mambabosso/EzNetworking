@@ -7,13 +7,13 @@ import eznetworking.util.SHA256Hash;
 import eznetworking.util.Serializer;
 import eznetworking.util.UniqueId;
 
-public final class Packet implements Serializable {
+public final class Packet implements Serializable, Comparable<Packet> {
 
-    private static final long serialVersionUID = 3856141068963021005L;
+    private static final long serialVersionUID = 3841842235028607064L;
 
     private final String id;
 
-    private final LocalDateTime creationDate;
+    private final LocalDateTime creationDateTime;
 
     private final String header;
 
@@ -27,7 +27,7 @@ public final class Packet implements Serializable {
 
     private Packet(String header, String source, String destination, Class<?> payloadClass, byte[] payloadBytes) {
         this.id = UniqueId.generate();
-        this.creationDate = LocalDateTime.now();
+        this.creationDateTime = LocalDateTime.now();
         this.header = header;
         this.source = source;
         this.destination = destination;
@@ -39,8 +39,8 @@ public final class Packet implements Serializable {
         return id;
     }
 
-    public LocalDateTime getCreationDate() {
-        return creationDate;
+    public LocalDateTime getCreationDateTime() {
+        return creationDateTime;
     }
 
     public String getHeader() {
@@ -60,10 +60,10 @@ public final class Packet implements Serializable {
     }
 
     public <T> T unpack(Class<T> tClass) {
-        if (payloadClass.equals(tClass)) {
-            return Serializer.deserialize(payloadBytes);
+        if (!payloadClass.equals(tClass)) {
+            throw new IllegalArgumentException();
         }
-        return null;
+        return Serializer.deserialize(payloadBytes);
     }
 
     public String getReplyHeader() {
@@ -72,6 +72,14 @@ public final class Packet implements Serializable {
 
     public String getSHA256Hash() {
         return SHA256Hash.getHash(payloadBytes);
+    }
+
+    @Override
+    public int compareTo(Packet packet) {
+        if (packet != null) {
+            return header.compareTo(packet.header);
+        }
+        return 0;
     }
 
     public static <T extends Serializable> Packet create(String header, String source, String destination, T tClass) {
